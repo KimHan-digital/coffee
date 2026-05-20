@@ -791,12 +791,10 @@ ua.addEventListener('drop', e => {
   Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).forEach(addPhoto);
 });
 
-let photoIdCounter = 0;
-
 function addPhoto(file) {
   const reader = new FileReader();
   reader.onload = e => {
-    const id = ++photoIdCounter;
+    const id = Date.now() + Math.random();
     PHOTOS.push({ id, dataUrl: e.target.result, file });
     renderPhotos();
   };
@@ -814,26 +812,17 @@ function renderPhotos() {
   const grid = document.getElementById('photoGrid');
   const btn = document.getElementById('readBtn');
 
-  if (!grid) return;
-
-  if (PHOTOS.length === 0) {
-    sec.style.display = 'none';
-    btn.disabled = true;
-    return;
-  }
+  if (PHOTOS.length === 0) { sec.style.display = 'none'; btn.disabled = true; return; }
 
   sec.style.display = 'block';
   btn.disabled = false;
 
-  let html = '';
-  PHOTOS.forEach(p => {
-    html += '<div class="photo-thumb">';
-    html += '<img src="' + p.dataUrl + '" alt="Fotograf">';
-    html += '<button class="photo-remove" onclick="removePhoto(' + p.id + ')" aria-label="Sil">×</button>';
-    html += '</div>';
-  });
-  html += '<button class="add-more-btn" onclick="document.getElementById('fileInput').click()" aria-label="Fotograf ekle">+</button>';
-  grid.innerHTML = html;
+  grid.innerHTML = PHOTOS.map(p => `
+    <div class="photo-thumb">
+      <img src="${p.dataUrl}" alt="Fotoğraf">
+      <button class="photo-remove" onclick="removePhoto(${p.id})" aria-label="Sil">×</button>
+    </div>
+  `).join('') + `<button class="add-more-btn" onclick="document.getElementById('fileInput').click()" aria-label="Fotoğraf ekle">+</button>`;
 }
 
 function showPhase(id) {
