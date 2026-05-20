@@ -878,7 +878,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function callFortuneAPI() {
   const GEMINI_API_KEY = 'AIzaSyCqSWqQxpPLX7_tmhpBuXC9Y-v2unUEep0';
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent" \ -H 'Content-Type: application/json' \ -H 'X-goog-api-key: AIzaSyCqSWqQxpPLX7_tmhpBuXC9Y-v2unUEep0' \ -X POST \ -d '{ "contents": [ { "parts": [ { "text": "Explain how AI works in a few words" } ] } ] }';
 
   const prompt = `Sen yılların deneyimine sahip, Anadolu geleneğiyle yetişmiş bir kahve falı ustasısın. Çok derin bir sezgi gücüne ve sembolik düşünme yeteneğine sahipsin.
 
