@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -876,38 +877,30 @@ async function startReading() {
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function callFortuneAPI() {
-  // Build content with all images
-  const imageContents = PHOTOS.map(p => ({
-    type: 'image',
-    source: {
-      type: 'base64',
-      media_type: p.dataUrl.match(/data:([^;]+)/)[1],
-      data: p.dataUrl.split(',')[1]
-    }
-  }));
+  const GEMINI_API_KEY = 'AIzaSyCqSWqQxpPLX7_tmhpBuXC9Y-v2unUEep0';
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const prompt = `Sen yılların deneyimine sahip, Anadolu geleneğiyle yetişmiş bir kahve falı ustasısın. Çok derin bir sezgi gücüne ve sembolik düşünme yeteneğine sahipsin.
 
 Aşağıdaki kahve fincanı fotoğraflarını çok dikkatli incele. Fincanın içindeki telve şekillerini, tabanındaki desenleri, kenar oluşumlarını ve tabaktaki izleri analiz et.
 
 Şunları bul ve yorumla:
-
 1. FİNCANIN İÇİ: Hangi şekiller, figürler, semboller görünüyor? Her birini detaylı yorumla.
 2. FİNCAN TABANI: Oradaki şekillerin anlamını açıkla (yakın gelecek mesajları).
 3. TABAK: Tabaktaki izler ne söylüyor?
 4. ŞEKİLLER VE SEMBOLLER: Uçan kuş, yüz, el, yol, su, dağ, hayvan, insan figürü vs.
 
-Lütfen yanıtını SADECE aşağıdaki JSON formatında ver (başka hiçbir şey yazma):
+Lütfen yanıtını SADECE geçerli JSON formatında ver, başka hiçbir şey yazma, markdown kullanma:
 {
   "genel_mesaj": "Fincanın genel mesajını 3-4 cümleyle, şiirsel ve gizemli bir dille yaz",
   "gecmis": "Geçmişe dair 2-3 cümle yorum",
-  "simdiki": "Şimdiki zamana dair 2-3 cümle yorum",  
+  "simdiki": "Şimdiki zamana dair 2-3 cümle yorum",
   "gelecek": "Geleceğe dair 2-3 cümle yorum",
   "ask_hayati": "Aşk ve ilişkiler hakkında 2-3 cümle yorum",
   "is_kariyer": "İş ve kariyer hakkında 2-3 cümle yorum",
   "saglik": "Sağlık ve enerji hakkında 1-2 cümle yorum",
   "semboller": [
-    {"emoji": "🦅", "isim": "Semboldeki şekil adı", "anlam": "Bu sembolün falınızdaki yorumu 1-2 cümle"},
+    {"emoji": "🦅", "isim": "Şekil adı", "anlam": "Yorum 1-2 cümle"},
     {"emoji": "🌊", "isim": "İkinci sembol", "anlam": "Yorum"},
     {"emoji": "🌙", "isim": "Üçüncü sembol", "anlam": "Yorum"},
     {"emoji": "⭐", "isim": "Dördüncü sembol", "anlam": "Yorum"}
@@ -915,29 +908,28 @@ Lütfen yanıtını SADECE aşağıdaki JSON formatında ver (başka hiçbir şe
   "sans_rakamlari": [7, 13, 21, 3],
   "sans_rengi": "Altın Sarısı",
   "sans_rengi_hex": "#c9a84c",
-  "ozel_mesaj": "Fala bakan kişiye özel, derin ve kişisel bir kapanış mesajı 2-3 cümle",
-  "uyari": "Dikkat etmesi gereken bir konu ya da uyarı (1 cümle)"
+  "ozel_mesaj": "Kapanış mesajı 2-3 cümle",
+  "uyari": "Dikkat edilmesi gereken konu (1 cümle)"
 }
 
-Türkçe yaz. Çok gizemli, derin, şiirsel ve umut verici bir dil kullan. Sadece fotoğrafta gördüklerini yorumla, fotoğraftaki gerçek şekilleri hayal gücünle bağdaştır.`;
+Türkçe yaz. Çok gizemli, derin, şiirsel ve umut verici bir dil kullan.`;
 
-  const messages = [
-    {
-      role: 'user',
-      content: [
-        ...imageContents,
-        { type: 'text', text: prompt }
-      ]
-    }
+  const parts = [
+    ...PHOTOS.map(p => ({
+      inlineData: {
+        mimeType: p.dataUrl.match(/data:([^;]+)/)[1],
+        data: p.dataUrl.split(',')[1]
+      }
+    })),
+    { text: prompt }
   ];
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch(GEMINI_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      messages
+      contents: [{ parts }],
+      generationConfig: { temperature: 1.0, maxOutputTokens: 1500 }
     })
   });
 
@@ -947,12 +939,11 @@ Türkçe yaz. Çok gizemli, derin, şiirsel ve umut verici bir dil kullan. Sadec
   }
 
   const data = await response.json();
-  const rawText = data.content.map(c => c.text || '').join('');
+  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   const clean = rawText.replace(/```json|```/g, '').trim();
   try {
     return JSON.parse(clean);
   } catch {
-    // Try to extract JSON from text
     const match = clean.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]);
     throw new Error('Fal yorumu alınamadı. Lütfen tekrar deneyin.');
